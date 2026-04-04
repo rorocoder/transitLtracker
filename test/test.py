@@ -11,7 +11,7 @@ def metra():
 
 def main():
     print("Hello, World!")
-    key = "HbHypyud39TjHdG3xRMzK323y"
+    key = config.CTA_BUS_API_KEY
     call = f"https://www.ctabustracker.com/bustime/api/v3/getroutes?key={key}&format=json"
     predictions = f"https://www.ctabustracker.com/bustime/api/v3/getpredictions"
     
