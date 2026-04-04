@@ -24,3 +24,9 @@ def format_datetime(dt):
     if dt is None:
         return "N/A"
     return dt.strftime("%I:%M:%S %p")
+
+def to_iso(dt):
+    return dt.isoformat(timespec="seconds") if dt is not None else None
+
+def to_seconds(td):
+    return int(td.total_seconds()) if td is not None else None

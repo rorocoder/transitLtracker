@@ -1,4 +1,5 @@
 
+import json
 import struct
 
 import requests
@@ -6,7 +7,7 @@ from datetime import datetime, timedelta
 import os, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 import src.config as config
-from src.utils import to_datetime, to_datetime_iso, format_timedelta, format_datetime
+from src.utils import to_datetime, to_datetime_iso, format_timedelta, format_datetime, to_iso, to_seconds
 
 def main():
     
@@ -64,6 +65,7 @@ def main():
     
     trip_options = build_trips(ellis_bus_predictions, gl_bus_predictions, rl_bus_predictions, gl_train_predictions, rl_train_predictions, relevant_vehicles, current_time)
 
+    trip_options.sort(key=lambda trip: trip.ellis_time_to_arrival)
     for trip in trip_options:
         print(f"Vehicle ID: {trip.vehicle_id}, Ellis Time To Arrival: {trip.ellis_time_to_arrival}, GL Train Deltas: {trip.gl_train_deltas}, RL Train Deltas: {trip.rl_train_deltas}")
         
@@ -73,13 +75,17 @@ def main():
     # ___ MAKE DECISION ___ 
     print("\nDECISIONS: \n")
     
+    for trip in trip_options:
+        print(json.dumps(trip.output(), indent=4))
     
-    make_decision(trip_options)
+    
+    # make_decision(trip_options)
     
 class TripOption:
-    def __init__(self, vehicle_id, ellis_time_to_arrival, gl_train_deltas, rl_train_deltas, gl_train_arrivals, rl_train_arrivals, gl_bus_arrival, rl_bus_arrival):
+    def __init__(self, vehicle_id, ellis_time_to_arrival, ellis_arrival_time, gl_train_deltas, rl_train_deltas, gl_train_arrivals, rl_train_arrivals, gl_bus_arrival, rl_bus_arrival):
         self.vehicle_id = vehicle_id
         self.ellis_time_to_arrival = ellis_time_to_arrival
+        self.ellis_arrival_time = ellis_arrival_time
         
         self.gl_train_deltas = gl_train_deltas
         self.rl_train_deltas = rl_train_deltas 
@@ -113,6 +119,19 @@ class TripOption:
 
     def __repr__(self):
         pass
+
+    def output(self):
+        return {
+            "vehicle_id": self.vehicle_id,
+            "ellis_time_to_arrival_sec": to_seconds(self.ellis_time_to_arrival),
+            "ellis_arrival_iso": to_iso(self.ellis_arrival_time),
+            "gl_good_option": self.gl_good_option,
+            "rl_good_option": self.rl_good_option,
+            "gl_connection_delta_sec": to_seconds(self.next_gl_delta),
+            "gl_connection_time_iso": to_iso(self.next_gl_time),
+            "rl_connection_delta_sec": to_seconds(self.next_rl_delta),
+            "rl_connection_time_iso": to_iso(self.next_rl_time),
+        }
     
     def __str__(self):
         return f"Vehicle ID: {self.vehicle_id}, Ellis Time To Arrival: {format_timedelta(self.ellis_time_to_arrival)}, GL Train Deltas: {[format_timedelta(delta) for delta in self.gl_train_deltas]}, RL Train Deltas: {[format_timedelta(delta) for delta in self.rl_train_deltas]}, GL Train Arrivals: {[format_datetime(arrival) for arrival in self.gl_train_arrivals]}, RL Train Arrivals: {[format_datetime(arrival) for arrival in self.rl_train_arrivals]}, GL Bus Arrival: {format_datetime(self.gl_bus_arrival)}, RL Bus Arrival: {format_datetime(self.rl_bus_arrival)}"
@@ -181,6 +200,7 @@ def build_trips(ellis_bus_predictions, gl_bus_predictions, rl_bus_predictions, g
         decision = TripOption(
             vehicle_id=vehicle_id,
             ellis_time_to_arrival=ellis_delta,
+            ellis_arrival_time=ellis_arrival_time,
             gl_train_deltas=gl_deltas, # only after
             rl_train_deltas=rl_deltas, # only after
             gl_train_arrivals=gl_train_arrivals_times, # these are only ones arriving after the bus arrival time
