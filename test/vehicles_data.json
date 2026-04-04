@@ -1,0 +1,9 @@
+{
+    "bustime-response": {
+        "error": [
+            {
+                "msg": "Either rt or vid parameter must be specified"
+            }
+        ]
+    }
+}

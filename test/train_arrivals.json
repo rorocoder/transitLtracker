@@ -1,0 +1,51 @@
+{
+    "ctatt": {
+        "errCd": "0",
+        "errNm": null,
+        "eta": [
+            {
+                "arrT": "2026-04-04T04:58:44",
+                "destNm": "Howard",
+                "destSt": "0",
+                "flags": null,
+                "heading": null,
+                "isApp": "0",
+                "isDly": "0",
+                "isFlt": "0",
+                "isSch": "1",
+                "lat": null,
+                "lon": null,
+                "prdt": "2026-04-04T04:47:44",
+                "rn": "901",
+                "rt": "Red",
+                "staId": "41170",
+                "staNm": "Garfield",
+                "stpDe": "Service toward Howard",
+                "stpId": "30223",
+                "trDr": "1"
+            },
+            {
+                "arrT": "2026-04-04T05:10:44",
+                "destNm": "Howard",
+                "destSt": "0",
+                "flags": null,
+                "heading": null,
+                "isApp": "0",
+                "isDly": "0",
+                "isFlt": "0",
+                "isSch": "1",
+                "lat": null,
+                "lon": null,
+                "prdt": "2026-04-04T04:47:44",
+                "rn": "845",
+                "rt": "Red",
+                "staId": "41170",
+                "staNm": "Garfield",
+                "stpDe": "Service toward Howard",
+                "stpId": "30223",
+                "trDr": "1"
+            }
+        ],
+        "tmst": "2026-04-04T04:47:46"
+    }
+}

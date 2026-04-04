@@ -1,0 +1,30 @@
+{
+    "bustime-response": {
+        "prd": [
+            {
+                "des": "Midway Orange Line",
+                "dly": false,
+                "dstp": 21777,
+                "dyn": 0,
+                "flagstop": 0,
+                "origtatripno": "276032995",
+                "prdctdn": "20",
+                "prdtm": "20260404 05:08:04",
+                "psgld": "",
+                "rt": "55",
+                "rtdd": "55",
+                "rtdir": "Westbound",
+                "stpid": "10575",
+                "stpnm": "55th Street & Ellis",
+                "stsd": "2026-04-04",
+                "stst": 18060,
+                "tablockid": "55 -602",
+                "tatripid": "122788",
+                "tmstmp": "20260404 04:47:26",
+                "typ": "A",
+                "vid": "1549",
+                "zone": ""
+            }
+        ]
+    }
+}
