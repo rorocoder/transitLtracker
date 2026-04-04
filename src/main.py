@@ -1,4 +1,6 @@
 
+import struct
+
 import requests
 from datetime import datetime, timedelta
 import os, sys
@@ -60,40 +62,88 @@ def main():
     # ___ BUILD WAIT TIMES ___ 
     print("\nWAIT TIMES: \n")
     
-    wait_times = build_wait_times(ellis_bus_predictions, gl_bus_predictions, rl_bus_predictions, gl_train_predictions, rl_train_predictions, relevant_vehicles, current_time)
+    trip_options = build_trips(ellis_bus_predictions, gl_bus_predictions, rl_bus_predictions, gl_train_predictions, rl_train_predictions, relevant_vehicles, current_time)
 
-    for entry in wait_times:
-        print(f"Vehicle ID: {entry['vehicle_id']}, Ellis Time To Arrival: {entry['ellis_time_to_arrival']}, GL Train Deltas: {entry['gl_train_deltas']}, RL Train Deltas: {entry['rl_train_deltas']}")
+    for trip in trip_options:
+        print(f"Vehicle ID: {trip.vehicle_id}, Ellis Time To Arrival: {trip.ellis_time_to_arrival}, GL Train Deltas: {trip.gl_train_deltas}, RL Train Deltas: {trip.rl_train_deltas}")
+        
+        # decision = Decision(**entry)
+        # print(decision)
     
     # ___ MAKE DECISION ___ 
     print("\nDECISIONS: \n")
     
-    make_decision(wait_times)
-   
-def make_decision(wait_times):
+    
+    make_decision(trip_options)
+    
+class TripOption:
+    def __init__(self, vehicle_id, ellis_time_to_arrival, gl_train_deltas, rl_train_deltas, gl_train_arrivals, rl_train_arrivals, gl_bus_arrival, rl_bus_arrival):
+        self.vehicle_id = vehicle_id
+        self.ellis_time_to_arrival = ellis_time_to_arrival
+        
+        self.gl_train_deltas = gl_train_deltas
+        self.rl_train_deltas = rl_train_deltas 
+        
+        self.gl_train_arrivals = gl_train_arrivals
+        self.rl_train_arrivals = rl_train_arrivals
+        
+        self.gl_bus_arrival = gl_bus_arrival
+        self.rl_bus_arrival = rl_bus_arrival
+        
+        self.gl_good_option = None
+        self.rl_good_option = None
+        
+        self.next_gl_delta = None
+        self.next_rl_delta = None
+        
+        self.next_gl_time = None
+        self.next_rl_time = None
+        
+        self.evaluate()
+        
+    def evaluate(self):
+        self.gl_good_option = any(delta <= timedelta(minutes=config.GOOD_GL_WAIT) for delta in self.gl_train_deltas)
+        self.rl_good_option = any(delta <= timedelta(minutes=config.GOOD_RL_WAIT) for delta in self.rl_train_deltas)
+        
+        self.next_gl_delta = min(self.gl_train_deltas) if self.gl_train_deltas else None 
+        self.next_rl_delta = min(self.rl_train_deltas) if self.rl_train_deltas else None
+        
+        self.next_gl_time = self.gl_bus_arrival + self.next_gl_delta if self.next_gl_delta is not None else None
+        self.next_rl_time = self.rl_bus_arrival + self.next_rl_delta if self.next_rl_delta is not None else None
+
+    def __repr__(self):
+        pass
+    
+    def __str__(self):
+        return f"Vehicle ID: {self.vehicle_id}, Ellis Time To Arrival: {format_timedelta(self.ellis_time_to_arrival)}, GL Train Deltas: {[format_timedelta(delta) for delta in self.gl_train_deltas]}, RL Train Deltas: {[format_timedelta(delta) for delta in self.rl_train_deltas]}, GL Train Arrivals: {[format_datetime(arrival) for arrival in self.gl_train_arrivals]}, RL Train Arrivals: {[format_datetime(arrival) for arrival in self.rl_train_arrivals]}, GL Bus Arrival: {format_datetime(self.gl_bus_arrival)}, RL Bus Arrival: {format_datetime(self.rl_bus_arrival)}"
+
+def make_decision(trip_options):
     # for each bus, if there is a train arriving within some minutes of the bus arrival, consider it a good option
-    for entry in wait_times:
-        vehicle_id = entry['vehicle_id']
-        ellis_time_to_arrival = entry['ellis_time_to_arrival']
-        gl_train_deltas = entry['gl_train_deltas']
-        rl_train_deltas = entry['rl_train_deltas']
+    for trip in trip_options:
+        vehicle_id = trip.vehicle_id
+        ellis_time_to_arrival = trip.ellis_time_to_arrival
+        gl_train_deltas = trip.gl_train_deltas
+        rl_train_deltas = trip.rl_train_deltas
         
         gl_good_option = any(delta <= timedelta(minutes=config.GOOD_GL_WAIT) for delta in gl_train_deltas)
         rl_good_option = any(delta <= timedelta(minutes=config.GOOD_RL_WAIT) for delta in rl_train_deltas)
         
+        best_gl_option = min(gl_train_deltas) if gl_train_deltas else None 
+        best_rl_option = min(rl_train_deltas) if rl_train_deltas else None
+        
         if gl_good_option and rl_good_option:
             print(f"Vehicle ID: {vehicle_id} (in {format_timedelta(ellis_time_to_arrival)} mins) is a good option for both GL ({format_timedelta(min(gl_train_deltas))} min wait) and RL ({format_timedelta(min(rl_train_deltas))} min wait).")
         elif gl_good_option:
-            print(f"Vehicle ID: {vehicle_id} (in {format_timedelta(ellis_time_to_arrival)} mins) is a good option for GL ({format_timedelta(min(gl_train_deltas))} min wait). RL has a wait of {format_timedelta(min(rl_train_deltas))} mins.")
+            print(f"Vehicle ID: {vehicle_id} (in {format_timedelta(ellis_time_to_arrival)} mins) is a good option for GL ({format_timedelta(min(gl_train_deltas))} min wait). RL has a wait of {format_timedelta(best_rl_option)} mins.")
         elif rl_good_option:
-            print(f"Vehicle ID: {vehicle_id} (in {format_timedelta(ellis_time_to_arrival)} mins) is a good option for RL ({format_timedelta(min(rl_train_deltas))} min wait). GL has a wait of {format_timedelta(min(gl_train_deltas))} mins.")
+            print(f"Vehicle ID: {vehicle_id} (in {format_timedelta(ellis_time_to_arrival)} mins) is a good option for RL ({format_timedelta(min(rl_train_deltas))} min wait). GL has a wait of {format_timedelta(best_gl_option)} mins.")
         else:
-            print(f"Vehicle ID: {vehicle_id} (in {format_timedelta(ellis_time_to_arrival)} mins) does not have a good train connection (GL: {format_timedelta(min(gl_train_deltas)) if gl_train_deltas else 'N/A'}, RL: {format_timedelta(min(rl_train_deltas)) if rl_train_deltas else 'N/A'}).")
+            print(f"Vehicle ID: {vehicle_id} (in {format_timedelta(ellis_time_to_arrival)} mins) does not have a good train connection (GL: {format_timedelta(best_gl_option)}, RL: {format_timedelta(best_rl_option)}).")
 
 
-def build_wait_times(ellis_bus_predictions, gl_bus_predictions, rl_bus_predictions, gl_train_predictions, rl_train_predictions, relevant_vehicles, current_time):
+def build_trips(ellis_bus_predictions, gl_bus_predictions, rl_bus_predictions, gl_train_predictions, rl_train_predictions, relevant_vehicles, current_time):
     # for each bus, store time to arrival at ellis, time to arrival at gl and rl, time to arrival of next trains at gl and rl
-    wait_times = []
+    trips = []
      
     for vehicle_id in relevant_vehicles:
         wait_time_entry = {}
@@ -121,15 +171,26 @@ def build_wait_times(ellis_bus_predictions, gl_bus_predictions, rl_bus_predictio
         
         # print(f"Vehicle ID: {vehicle_id}, Ellis Time To Arrival: {ellis_delta}, GL Train Deltas: {gl_deltas}, RL Train Deltas: {rl_deltas}")
         
-        wait_time_entry = {
-            'vehicle_id': vehicle_id,
-            'ellis_time_to_arrival': ellis_delta,
-            'gl_train_deltas': gl_deltas,
-            'rl_train_deltas': rl_deltas
-        }
+        # wait_time_entry = {
+        #     'vehicle_id': vehicle_id,
+        #     'ellis_time_to_arrival': ellis_delta,
+        #     'gl_train_deltas': gl_deltas,
+        #     'rl_train_deltas': rl_deltas
+        # }
         
-        wait_times.append(wait_time_entry)
-    return wait_times
+        decision = TripOption(
+            vehicle_id=vehicle_id,
+            ellis_time_to_arrival=ellis_delta,
+            gl_train_deltas=gl_deltas, # only after
+            rl_train_deltas=rl_deltas, # only after
+            gl_train_arrivals=gl_train_arrivals_times, # these are only ones arriving after the bus arrival time
+            rl_train_arrivals=rl_train_arrivals_times, # these are only ones arriving after the bus arrival time
+            gl_bus_arrival=gl_bus_arrival_time,
+            rl_bus_arrival=rl_bus_arrival_time
+        )
+        
+        trips.append(decision)
+    return trips
         
        
 

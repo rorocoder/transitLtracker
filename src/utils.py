@@ -11,11 +11,16 @@ def to_datetime_iso(time_str):
     return datetime.strptime(time_str, fmt)
 
 def format_timedelta(td):
-    total_seconds = int(td.total_seconds())
-    minutes = total_seconds // 60
-    seconds = total_seconds % 60
-    return f"{minutes}:{seconds:02d}"
-
+    if td is None:
+        return "N/A"
+    else:
+        total_seconds = int(td.total_seconds())
+        minutes = total_seconds // 60
+        seconds = total_seconds % 60
+        return f"{minutes}:{seconds:02d}"
+    
 def format_datetime(dt):
     # ex: "02:45:30" or "02:45:30 PM"
+    if dt is None:
+        return "N/A"
     return dt.strftime("%I:%M:%S %p")
