@@ -27,12 +27,20 @@ def main():
     print(f"{len(relevant_vehicles)} RELEVANT BUSES: {relevant_vehicles}\n")
     
     gl_bus_predictions = bus_timings(config.GL_BUS_STOP_ID, relevant_vehicles)
+    
+    print("\nGL BUS ARRIVAL PREDICTIONS:")
+    for vehicle_id, details in gl_bus_predictions.items():
+        print(f"Bus ID: {vehicle_id}, Arrival Time: {details['arrival_time']}")
 
     rl_bus_predictions = bus_timings(config.RL_BUS_STOP_ID, relevant_vehicles)
     
+    print("\nRL BUS ARRIVAL PREDICTIONS:")
+    for vehicle_id, details in rl_bus_predictions.items():
+        print(f"Bus ID: {vehicle_id}, Arrival Time: {details['arrival_time']}")
+    
     earliest_gl_arrival = min((pred['arrival_time'] for pred in gl_bus_predictions.values()), default=None)
     earliest_rl_arrival = min((pred['arrival_time'] for pred in rl_bus_predictions.values()), default=None)
-    print(f"Earliest GL Arrival: {earliest_gl_arrival}, Earliest RL Arrival: {earliest_rl_arrival}")
+    print(f"\nEarliest GL Arrival: {earliest_gl_arrival}, Earliest RL Arrival: {earliest_rl_arrival}\n")
     
     # ___ TRAIN TIMES ___ 
     print("TRAINS: \n")
@@ -45,20 +53,20 @@ def main():
 
     rl_train_predictions = train_timings(config.RL_GARFIELD_TRAIN_STOP_ID)
     
-    print("RL Train Predictions:")
+    print("\nRL Train Predictions:")
     for train_id, details in rl_train_predictions.items():
         print(f"Train ID: {train_id}, Arrival Time: {details['arrival_time']}")
     
     # ___ BUILD WAIT TIMES ___ 
-    print("WAIT TIMES: \n")
+    print("\nWAIT TIMES: \n")
     
     wait_times = build_wait_times(ellis_bus_predictions, gl_bus_predictions, rl_bus_predictions, gl_train_predictions, rl_train_predictions, relevant_vehicles, current_time)
-    print("_-")
+
     for entry in wait_times:
         print(f"Vehicle ID: {entry['vehicle_id']}, Ellis Time To Arrival: {entry['ellis_time_to_arrival']}, GL Train Deltas: {entry['gl_train_deltas']}, RL Train Deltas: {entry['rl_train_deltas']}")
     
     # ___ MAKE DECISION ___ 
-    print("DECISIONS: \n")
+    print("\nDECISIONS: \n")
     
     make_decision(wait_times)
    
@@ -74,11 +82,11 @@ def make_decision(wait_times):
         rl_good_option = any(delta <= timedelta(minutes=config.GOOD_RL_WAIT) for delta in rl_train_deltas)
         
         if gl_good_option and rl_good_option:
-            print(f"Vehicle ID: {vehicle_id} (in {format_timedelta(ellis_time_to_arrival)} mins) is a good option for both GL and RL.")
+            print(f"Vehicle ID: {vehicle_id} (in {format_timedelta(ellis_time_to_arrival)} mins) is a good option for both GL ({format_timedelta(min(gl_train_deltas))} min wait) and RL ({format_timedelta(min(rl_train_deltas))} min wait).")
         elif gl_good_option:
-            print(f"Vehicle ID: {vehicle_id} (in {format_timedelta(ellis_time_to_arrival)} mins) is a good option for GL.")
+            print(f"Vehicle ID: {vehicle_id} (in {format_timedelta(ellis_time_to_arrival)} mins) is a good option for GL ({format_timedelta(min(gl_train_deltas))} min wait). RL has a wait of {format_timedelta(min(rl_train_deltas))} mins.")
         elif rl_good_option:
-            print(f"Vehicle ID: {vehicle_id} (in {format_timedelta(ellis_time_to_arrival)} mins) is a good option for RL.")
+            print(f"Vehicle ID: {vehicle_id} (in {format_timedelta(ellis_time_to_arrival)} mins) is a good option for RL ({format_timedelta(min(rl_train_deltas))} min wait). GL has a wait of {format_timedelta(min(gl_train_deltas))} mins.")
         else:
             print(f"Vehicle ID: {vehicle_id} (in {format_timedelta(ellis_time_to_arrival)} mins) does not have a good train connection (GL: {format_timedelta(min(gl_train_deltas)) if gl_train_deltas else 'N/A'}, RL: {format_timedelta(min(rl_train_deltas)) if rl_train_deltas else 'N/A'}).")
 
