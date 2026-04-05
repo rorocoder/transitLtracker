@@ -121,7 +121,7 @@ def main():
     train_route_call = "http://lapi.transitchicago.com/api/1.0/ttarrivals.aspx"
     train_route_params = {
         'key': config.CTA_TRAIN_API_KEY,
-        'stpid': relevant_train_numbers[0],
+        # 'runnumber': relevant_train_numbers[0],
         'outputType': 'JSON'
     }
     

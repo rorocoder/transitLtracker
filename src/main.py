@@ -9,7 +9,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 import src.config as config
 from src.utils import to_datetime, to_datetime_iso, format_timedelta, format_datetime, to_iso, to_seconds
 
-def main():
+
+def get_trips():
     
     # ___ TIME SYNCHRONIZATION ___
     
@@ -77,6 +78,8 @@ def main():
     
     for trip in trip_options:
         print(json.dumps(trip.output(), indent=4))
+        
+    return {"trips": [trip.output() for trip in trip_options]}
     
     
     # make_decision(trip_options)
@@ -293,4 +296,4 @@ def train_timings(stop_id):
 
 
 if __name__ == "__main__":
-    main()
+    print(get_trips())
